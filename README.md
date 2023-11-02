@@ -183,3 +183,33 @@ i = 4
 i = 5
 
 ```
+
+
+pom.xml中添加内容解释：
+```xml
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Premain-Class>org.example.PreMain</Premain-Class>
+                            <Can-Redefine-Classes>true</Can-Redefine-Classes>
+                            <Can-Retransform-Classes>true</Can-Retransform-Classes>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+```
+
+这是一个 Maven 项目的 pom.xml 文件中的一段配置，主要作用是在打包生成的 Jar 包中添加一些 Manifest 属性，以支持在 Java 虚拟机启动时加入代理类（PreMain-Class）以及允许使用类重定义和转换器重转换功能。
+
+具体来说，这段配置通过 maven-jar-plugin 插件实现，其中：
+
+<Premain-Class> 指定了代理类的全限定名，该类会在应用程序启动之前被 JVM 加载并且执行 premain() 方法；
+<Can-Redefine-Classes> 和 <Can-Retransform-Classes> 分别指定了 JVM 是否允许在运行时重新定义类和重新转换类。如果设置为 true，则代表允许这些操作；否则，禁止这些操作。
+总体来说，这段配置的作用是为 Java 应用程序添加一些代理和调试能力，方便开发者在调试和测试代码时进行一些特殊的操作。
