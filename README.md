@@ -213,3 +213,50 @@ pom.xml中添加内容解释：
 <Premain-Class> 指定了代理类的全限定名，该类会在应用程序启动之前被 JVM 加载并且执行 premain() 方法；
 <Can-Redefine-Classes> 和 <Can-Retransform-Classes> 分别指定了 JVM 是否允许在运行时重新定义类和重新转换类。如果设置为 true，则代表允许这些操作；否则，禁止这些操作。
 总体来说，这段配置的作用是为 Java 应用程序添加一些代理和调试能力，方便开发者在调试和测试代码时进行一些特殊的操作。
+
+
+```java
+    static class DefineTransformer implements ClassFileTransformer {
+        @Override
+        public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
+            System.out.println("premain load Class: " + className);  // 注意这里的输出
+            return classfileBuffer;
+        }
+    } 
+```
+
+上述代码定义了一个静态内部类 DefineTransformer，实现了 ClassFileTransformer 接口。ClassFileTransformer 接口是 Java Instrumentation API 的一部分，用于在加载类文件时进行转换和修改。
+
+该类的作用是在类加载过程中对指定的类进行转换，并输出加载的类名。具体来说：
+
+transform 方法是 ClassFileTransformer 接口定义的方法，在类加载过程中会被回调。它接收以下参数：
+loader：类加载器，加载当前类的类加载器。
+className：正在被加载的类的全限定名。
+classBeingRedefined：如果是正在重新定义的类，则为正在重新定义的类；否则为 null。
+protectionDomain：保护域，描述了代码源、权限等信息。
+classfileBuffer：类文件的字节码数组。
+在方法内部，代码简单地将正在加载的类的全限定名打印出来，以便开发者观察加载的过程。然后，原样返回类文件的字节码数组，表示不对类文件做任何修改。
+
+这段代码通常与上述 Maven 配置中的 <Premain-Class> 相结合使用，作为 Java Agent 的一部分，用于在 JVM 启动时通过 -javaagent 参数加载并执行预定义的代理类和转换器。
+
+
+
+```java
+public class CommandExecutionFilter implements ClassFileTransformer {
+    private static final String[] FILTER_CLASSES = {"java/lang/Runtime", "java/lang/ProcessBuilder"};
+
+    @Override
+    public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
+        for (String filterClass : FILTER_CLASSES) {
+            if (className.equals(filterClass)) {
+                System.out.println("Loading of " + className + " is blocked.");
+                throw new IllegalClassFormatException(className + " is not allowed to be loaded.");
+            }
+        }
+        return classfileBuffer;
+    }
+}
+```
+在上述代码中，我们定义了一个名为 CommandExecutionFilter 的类，它实现了 ClassFileTransformer 接口。在 transform 方法中，我们检查正在加载的类是否在 FILTER_CLASSES 数组中。如果加载的类属于被过滤的类，则打印相应的信息并抛出 IllegalClassFormatException 异常。这样，就可以阻止这些类的加载。
+
+您可以将上述代码用作 Java Agent 的一部分，并通过 -javaagent 参数在 JVM 启动时加载。这样，在加载过滤器类之后，即可阻止 Runtime 和 ProcessBuilder 等类的加载，从而过滤命令执行的操作。请注意，这只是其中一种可能的实现方式，实际上您可以根据具体的需求和场景进行修改和扩展。
