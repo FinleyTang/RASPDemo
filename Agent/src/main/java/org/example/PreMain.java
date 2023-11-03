@@ -9,18 +9,9 @@ import java.security.ProtectionDomain;
 
 public class PreMain {
     public static void premain(String agentArgs, Instrumentation inst) {
-        System.out.println("agentArgs:" + agentArgs);
-        inst.addTransformer(new DefineTransformer(), true);
+        inst.addTransformer(new AgentTransform());
     }
 
 
-
-    static class DefineTransformer implements ClassFileTransformer {
-        @Override
-        public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
-            System.out.println("premain load Class: " + className);  // 注意这里的输出
-            return classfileBuffer;
-        }
-    }
 
 }

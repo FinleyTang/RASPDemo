@@ -260,3 +260,46 @@ public class CommandExecutionFilter implements ClassFileTransformer {
 在上述代码中，我们定义了一个名为 CommandExecutionFilter 的类，它实现了 ClassFileTransformer 接口。在 transform 方法中，我们检查正在加载的类是否在 FILTER_CLASSES 数组中。如果加载的类属于被过滤的类，则打印相应的信息并抛出 IllegalClassFormatException 异常。这样，就可以阻止这些类的加载。
 
 您可以将上述代码用作 Java Agent 的一部分，并通过 -javaagent 参数在 JVM 启动时加载。这样，在加载过滤器类之后，即可阻止 Runtime 和 ProcessBuilder 等类的加载，从而过滤命令执行的操作。请注意，这只是其中一种可能的实现方式，实际上您可以根据具体的需求和场景进行修改和扩展。
+
+
+## 报错解决
+
+super(Opcodes.ASM7, cv); 这一行报错 找不到符号
+
+这个错误通常表示您的代码中缺少对相关符号的引用。在这种情况下，报错是因为找不到Opcodes符号。
+首先我在 代码中已经导入：import org.objectweb.asm.Opcodes;
+然后检查 pom.xml发现，没有添加相关依赖，我加入了：
+```xml
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-all</artifactId>
+            <version>5.1</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.2</version>
+        </dependency>
+```
+
+接下来，又报错：ClassReader ClassWriter这些找不到符号，对比一下：
+https://github.com/iiiusky/java_rasp_example/blob/master/agent/src/main/java/cn/org/javaweb/agent/AgentTransform.java
+
+发现可能是导包不够，试导入以下内容：
+```java
+import org.apache.commons.io.IOUtils;
+import org.objectweb.asm.*;
+
+import java.io.ByteArrayInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.lang.instrument.ClassFileTransformer;
+import java.lang.instrument.IllegalClassFormatException;
+import java.security.ProtectionDomain;
+import java.util.regex.Pattern;
+```
+重新打包就可以了。
+
+## 参考链接
+[浅谈RASP技术攻防之基础篇](https://www.03sec.com/Ideas/qian-tanrasp-ji-shu-gong-fang-zhi-ji-chu-pian.html)
+
